@@ -6,12 +6,8 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
-    <meta name="theme-color" content="#050505" />
-    <link rel="manifest" href="manifest.json" />
-    <title>NeonRecorder Offline</title>
+    <title>NeonCapture: Max Volume</title>
     <style>
-      /* ... PASTE THE CSS FROM THE PREVIOUS RESPONSE HERE ... */
-      /* I will include the CSS below for completeness */
       :root {
         --bg-dark: #050505;
         --surface: #141414;
@@ -22,10 +18,12 @@
         --text-main: #ffffff;
         --text-mute: #888888;
       }
+
       * {
         box-sizing: border-box;
         -webkit-tap-highlight-color: transparent;
       }
+
       body {
         background-color: var(--bg-dark);
         color: var(--text-main);
@@ -36,6 +34,8 @@
         flex-direction: column;
         overflow: hidden;
       }
+
+      /* --- Header --- */
       .hud-header {
         padding: 15px 20px;
         display: flex;
@@ -45,6 +45,7 @@
         border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         z-index: 50;
       }
+
       .brand {
         font-size: 1.1rem;
         font-weight: 800;
@@ -53,6 +54,7 @@
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
       }
+
       .badge-group {
         display: flex;
         gap: 8px;
@@ -65,6 +67,8 @@
         border-radius: 4px;
         font-weight: bold;
       }
+
+      /* --- Viewport --- */
       .viewport {
         flex: 1;
         position: relative;
@@ -74,6 +78,8 @@
         justify-content: center;
         overflow: hidden;
       }
+
+      /* Audio Wave Decoration */
       .viewport::after {
         content: "";
         position: absolute;
@@ -88,12 +94,15 @@
         );
         pointer-events: none;
       }
+
       video {
         width: 100%;
         height: 100%;
         object-fit: contain;
         z-index: 2;
       }
+
+      /* --- Recording HUD --- */
       .rec-indicator {
         position: absolute;
         top: 20px;
@@ -117,6 +126,8 @@
         border-radius: 50%;
         animation: pulse 1s infinite;
       }
+
+      /* --- Control Deck --- */
       .control-deck {
         background: var(--surface);
         border-top: 1px solid var(--surface-light);
@@ -127,10 +138,12 @@
         max-height: 60vh;
         overflow-y: auto;
       }
+
       .control-deck.locked {
         opacity: 0.4;
         pointer-events: none;
       }
+
       .settings-grid {
         display: grid;
         gap: 18px;
@@ -145,6 +158,8 @@
         letter-spacing: 1px;
         font-weight: 700;
       }
+
+      /* Segment Controls */
       .segment-control {
         display: flex;
         background: var(--surface-light);
@@ -168,6 +183,8 @@
         background: var(--primary);
         box-shadow: 0 2px 8px rgba(0, 255, 136, 0.3);
       }
+
+      /* Slider */
       .range-wrap {
         position: relative;
         margin-top: 10px;
@@ -202,6 +219,8 @@
         font-size: 0.8rem;
         font-weight: bold;
       }
+
+      /* Buttons */
       .action-area {
         display: flex;
         gap: 10px;
@@ -221,6 +240,7 @@
       .btn-main:active {
         transform: scale(0.98);
       }
+
       #startBtn {
         background: linear-gradient(135deg, var(--primary), #00b894);
         color: #052e16;
@@ -237,6 +257,7 @@
         display: none;
         pointer-events: auto;
       }
+
       @keyframes pulse {
         0% {
           opacity: 1;
@@ -281,6 +302,7 @@
             <button class="segment-btn" onclick="setRes(1440)">2K</button>
           </div>
         </div>
+
         <div class="control-group">
           <label>Framerate (Hz)</label>
           <div class="segment-control" id="fpsControl">
@@ -289,6 +311,7 @@
             <button class="segment-btn" onclick="setFps(120)">120</button>
           </div>
         </div>
+
         <div class="control-group">
           <label>Video Bitrate</label>
           <div class="range-wrap">
@@ -304,6 +327,7 @@
           </div>
         </div>
       </div>
+
       <div class="action-area">
         <button id="startBtn" class="btn-main">Start Recording</button>
         <button id="stopBtn" class="btn-main">Stop Capture</button>
@@ -312,23 +336,23 @@
     </div>
 
     <script>
-      // --- OFFLINE INSTALLER LOGIC (NEW) ---
-      if ("serviceWorker" in navigator) {
-        navigator.serviceWorker
-          .register("./sw.js")
-          .then(() => console.log("Offline Ready"))
-          .catch((err) => console.log("SW Fail", err));
-      }
+      // --- Config State ---
+      const config = {
+        res: 1080,
+        fps: 60,
+        bitrate: 12000000,
+      };
 
-      // --- YOUR EXISTING RECORDER LOGIC ---
-      const config = { res: 1080, fps: 60, bitrate: 12000000 };
+      // Hardcoded Boost Factor (400%)
       const AUDIO_GAIN = 4.0;
-      let mediaRecorder,
-        chunks = [],
-        timerInt,
-        stream = null,
-        audioContext = null;
 
+      let mediaRecorder;
+      let chunks = [];
+      let timerInt;
+      let stream = null;
+      let audioContext = null;
+
+      // --- UI Logic ---
       function setActive(parentId, btnIndex) {
         const parent = document.getElementById(parentId);
         Array.from(parent.children).forEach((c, i) =>
@@ -355,6 +379,7 @@
         else deck.classList.add("locked");
       }
 
+      // --- Core Logic ---
       const preview = document.getElementById("preview");
       const startBtn = document.getElementById("startBtn");
       const stopBtn = document.getElementById("stopBtn");
@@ -363,6 +388,7 @@
       const timeDisplay = document.getElementById("timeDisplay");
       const codecBadge = document.getElementById("codecBadge");
 
+      // Codec Detection
       let mimeType = "video/webm;codecs=vp8";
       let ext = "webm";
 
@@ -383,6 +409,8 @@
       startBtn.onclick = async () => {
         try {
           toggleControls(false);
+
+          // 1. GET STREAMS
           stream = await navigator.mediaDevices.getDisplayMedia({
             video: {
               height: { ideal: config.res },
@@ -397,15 +425,22 @@
             },
           });
 
+          // 2. AUTO-BOOST ENGINE (Fixed at 400%)
           let finalStream = stream;
+
           if (stream.getAudioTracks().length > 0) {
             audioContext = new AudioContext();
             const source = audioContext.createMediaStreamSource(stream);
             const gainNode = audioContext.createGain();
+
+            // FORCE 4X GAIN
             gainNode.gain.value = AUDIO_GAIN;
+
             const dest = audioContext.createMediaStreamDestination();
             source.connect(gainNode);
             gainNode.connect(dest);
+
+            // Combine Boosted Audio + Original Video
             finalStream = new MediaStream([
               stream.getVideoTracks()[0],
               dest.stream.getAudioTracks()[0],
@@ -413,26 +448,34 @@
           }
 
           preview.srcObject = finalStream;
-          preview.muted = true;
+          preview.muted = true; // Mute preview to prevent echo
 
-          mediaRecorder = new MediaRecorder(finalStream, {
+          // 3. RECORDER SETUP
+          const options = {
             mimeType: mimeType,
             videoBitsPerSecond: config.bitrate,
             audioBitsPerSecond: 192000,
-          });
+          };
+
+          mediaRecorder = new MediaRecorder(finalStream, options);
           chunks = [];
+
           mediaRecorder.ondataavailable = (e) => {
             if (e.data.size > 0) chunks.push(e.data);
           };
+
           mediaRecorder.onstop = () => {
             clearInterval(timerInt);
-            if (audioContext) audioContext.close();
+            if (audioContext) audioContext.close(); // Save Battery
+
             const blob = new Blob(chunks, { type: mimeType.split(";")[0] });
             const url = URL.createObjectURL(blob);
+
             preview.srcObject = null;
             preview.src = url;
-            preview.muted = false;
+            preview.muted = false; // Unmute for playback
             preview.controls = true;
+
             startBtn.style.display = "block";
             startBtn.innerText = "Record New";
             stopBtn.style.display = "none";
@@ -442,12 +485,15 @@
           };
 
           stream.getVideoTracks()[0].onended = () => stopBtn.click();
+
           mediaRecorder.start(1000);
 
+          // UI Transition
           startBtn.style.display = "none";
           stopBtn.style.display = "block";
           dlBtn.style.display = "none";
           recTimer.style.display = "flex";
+
           let sec = 0;
           timerInt = setInterval(() => {
             sec++;
@@ -469,12 +515,13 @@
           if (stream) stream.getTracks().forEach((t) => t.stop());
         }
       };
+
       dlBtn.onclick = () => {
         const blob = new Blob(chunks, { type: mimeType.split(";")[0] });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `GameClip_${Date.now()}.${ext}`;
+        a.download = `GameClip_MaxVol_${Date.now()}.${ext}`;
         a.click();
       };
     </script>
