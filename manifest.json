@@ -1,0 +1,20 @@
+{
+  "name": "NeonRecorder",
+  "short_name": "NeonRec",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#00ff88",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3178/3178158.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3178/3178158.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
