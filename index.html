@@ -1,529 +1,322 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-    />
-    <title>NeonCapture: Max Volume</title>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NeonRec: Safe Mode</title>
     <style>
-      :root {
-        --bg-dark: #050505;
-        --surface: #141414;
-        --surface-light: #1f1f1f;
-        --primary: #00ff88;
-        --accent: #00ccff;
-        --danger: #ff0055;
-        --text-main: #ffffff;
-        --text-mute: #888888;
-      }
-
-      * {
-        box-sizing: border-box;
-        -webkit-tap-highlight-color: transparent;
-      }
-
-      body {
-        background-color: var(--bg-dark);
-        color: var(--text-main);
-        font-family: "Segoe UI", Roboto, sans-serif;
-        margin: 0;
-        height: 100vh;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-      }
-
-      /* --- Header --- */
-      .hud-header {
-        padding: 15px 20px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background: rgba(20, 20, 20, 0.95);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-        z-index: 50;
-      }
-
-      .brand {
-        font-size: 1.1rem;
-        font-weight: 800;
-        letter-spacing: 1px;
-        background: linear-gradient(90deg, var(--primary), var(--accent));
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-      }
-
-      .badge-group {
-        display: flex;
-        gap: 8px;
-      }
-      .codec-badge {
-        font-size: 0.65rem;
-        color: var(--primary);
-        border: 1px solid var(--primary);
-        padding: 3px 6px;
-        border-radius: 4px;
-        font-weight: bold;
-      }
-
-      /* --- Viewport --- */
-      .viewport {
-        flex: 1;
-        position: relative;
-        background: #000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-      }
-
-      /* Audio Wave Decoration */
-      .viewport::after {
-        content: "";
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 100px;
-        background: linear-gradient(
-          to top,
-          rgba(0, 255, 136, 0.05),
-          transparent
-        );
-        pointer-events: none;
-      }
-
-      video {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-        z-index: 2;
-      }
-
-      /* --- Recording HUD --- */
-      .rec-indicator {
-        position: absolute;
-        top: 20px;
-        background: rgba(10, 10, 10, 0.85);
-        backdrop-filter: blur(8px);
-        border: 1px solid var(--danger);
-        padding: 6px 14px;
-        border-radius: 50px;
-        display: none;
-        align-items: center;
-        gap: 8px;
-        font-family: monospace;
-        font-size: 0.9rem;
-        font-weight: bold;
-        z-index: 20;
-      }
-      .dot {
-        width: 8px;
-        height: 8px;
-        background: var(--danger);
-        border-radius: 50%;
-        animation: pulse 1s infinite;
-      }
-
-      /* --- Control Deck --- */
-      .control-deck {
-        background: var(--surface);
-        border-top: 1px solid var(--surface-light);
-        padding: 20px 20px 35px 20px;
-        border-radius: 20px 20px 0 0;
-        box-shadow: 0 -5px 30px rgba(0, 0, 0, 0.6);
-        transition: opacity 0.3s;
-        max-height: 60vh;
-        overflow-y: auto;
-      }
-
-      .control-deck.locked {
-        opacity: 0.4;
-        pointer-events: none;
-      }
-
-      .settings-grid {
-        display: grid;
-        gap: 18px;
-        margin-bottom: 25px;
-      }
-      .control-group label {
-        display: block;
-        font-size: 0.7rem;
-        color: var(--text-mute);
-        margin-bottom: 8px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        font-weight: 700;
-      }
-
-      /* Segment Controls */
-      .segment-control {
-        display: flex;
-        background: var(--surface-light);
-        border-radius: 8px;
-        padding: 4px;
-      }
-      .segment-btn {
-        flex: 1;
-        background: none;
-        border: none;
-        color: var(--text-mute);
-        padding: 8px;
-        font-size: 0.8rem;
-        font-weight: 600;
-        cursor: pointer;
-        border-radius: 6px;
-        transition: 0.2s;
-      }
-      .segment-btn.active {
-        color: #000;
-        background: var(--primary);
-        box-shadow: 0 2px 8px rgba(0, 255, 136, 0.3);
-      }
-
-      /* Slider */
-      .range-wrap {
-        position: relative;
-        margin-top: 10px;
-        padding: 0 5px;
-      }
-      input[type="range"] {
-        width: 100%;
-        -webkit-appearance: none;
-        background: transparent;
-      }
-      input[type="range"]::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        height: 16px;
-        width: 16px;
-        border-radius: 50%;
-        background: var(--accent);
-        cursor: pointer;
-        margin-top: -6px;
-        box-shadow: 0 0 10px rgba(0, 204, 255, 0.5);
-      }
-      input[type="range"]::-webkit-slider-runnable-track {
-        width: 100%;
-        height: 4px;
-        background: #333;
-        border-radius: 2px;
-      }
-      .range-val {
-        position: absolute;
-        right: 0;
-        top: -24px;
-        color: var(--accent);
-        font-size: 0.8rem;
-        font-weight: bold;
-      }
-
-      /* Buttons */
-      .action-area {
-        display: flex;
-        gap: 10px;
-      }
-      .btn-main {
-        flex: 1;
-        padding: 15px;
-        border: none;
-        border-radius: 12px;
-        font-size: 0.95rem;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        cursor: pointer;
-        transition: transform 0.1s;
-      }
-      .btn-main:active {
-        transform: scale(0.98);
-      }
-
-      #startBtn {
-        background: linear-gradient(135deg, var(--primary), #00b894);
-        color: #052e16;
-      }
-      #stopBtn {
-        background: linear-gradient(135deg, #ff0055, #d63031);
-        color: white;
-        display: none;
-        pointer-events: auto;
-      }
-      #dlBtn {
-        background: #fff;
-        color: #000;
-        display: none;
-        pointer-events: auto;
-      }
-
-      @keyframes pulse {
-        0% {
-          opacity: 1;
+        :root {
+            --bg-dark: #050505;
+            --surface: #141414;
+            --primary: #00ff88;
+            --accent: #00ccff;
+            --danger: #ff0055;
+            --text-main: #ffffff;
+            --text-mute: #888888;
         }
-        50% {
-          opacity: 0.4;
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
-        100% {
-          opacity: 1;
+
+        .hud-header {
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(20, 20, 20, 0.95);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            z-index: 50;
         }
-      }
+        
+        .brand { 
+            font-size: 1.1rem; font-weight: 800; letter-spacing: 1px; 
+            background: linear-gradient(90deg, var(--primary), var(--accent)); 
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
+        }
+
+        .status-badge {
+            font-size: 0.7rem; font-weight: bold; color: var(--text-mute);
+            border: 1px solid #333; padding: 4px 8px; border-radius: 4px;
+        }
+
+        .viewport {
+            flex: 1;
+            position: relative;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        
+        video { width: 100%; height: 100%; object-fit: contain; }
+
+        .rec-indicator {
+            position: absolute; top: 20px;
+            background: rgba(10, 10, 10, 0.85);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--danger);
+            padding: 6px 14px;
+            border-radius: 50px;
+            display: none;
+            align-items: center; gap: 8px;
+            font-family: monospace; font-size: 0.9rem; font-weight: bold;
+            z-index: 20;
+        }
+        .dot { width: 8px; height: 8px; background: var(--danger); border-radius: 50%; animation: pulse 1s infinite; }
+
+        .control-deck {
+            background: var(--surface);
+            border-top: 1px solid #222;
+            padding: 20px;
+            border-radius: 20px 20px 0 0;
+            box-shadow: 0 -5px 30px rgba(0,0,0,0.6);
+            transition: opacity 0.3s;
+        }
+
+        .control-deck.locked { opacity: 0.5; pointer-events: none; }
+
+        .action-area { display: flex; gap: 10px; margin-top: 10px; }
+        .btn-main {
+            flex: 1; padding: 18px; border: none; border-radius: 12px;
+            font-size: 1rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;
+            cursor: pointer; transition: transform 0.1s;
+        }
+        
+        #startBtn { background: linear-gradient(135deg, var(--primary), #00b894); color: #052e16; }
+        #stopBtn { background: linear-gradient(135deg, #ff0055, #d63031); color: white; display: none; pointer-events: auto; }
+        #dlBtn { background: #fff; color: #000; display: none; pointer-events: auto; }
+
+        /* Error Toast */
+        #errorMsg {
+            position: absolute; top: 60px; left: 50%; transform: translateX(-50%);
+            background: #ff0055; color: white; padding: 10px 20px;
+            border-radius: 8px; font-size: 0.8rem; display: none; z-index: 100;
+            width: 90%; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
     </style>
-  </head>
-  <body>
+</head>
+<body>
+
     <div class="hud-header">
-      <div class="brand">NEON<span style="color: #fff">REC</span></div>
-      <div class="badge-group">
-        <div class="codec-badge" style="border-color: #ffaa00; color: #ffaa00">
-          VOL MAX 400%
-        </div>
-        <div class="codec-badge" id="codecBadge">INIT...</div>
-      </div>
+        <div class="brand">NEON<span style="color:#fff">REC</span></div>
+        <div class="status-badge" id="statusBadge">READY</div>
     </div>
 
+    <div id="errorMsg"></div>
+
     <div class="viewport">
-      <div class="rec-indicator" id="recTimer">
-        <div class="dot"></div>
-        <span id="timeDisplay">00:00</span>
-      </div>
-      <video id="preview" autoplay muted playsinline></video>
+        <div class="rec-indicator" id="recTimer">
+            <div class="dot"></div>
+            <span id="timeDisplay">00:00</span>
+        </div>
+        <video id="preview" autoplay muted playsinline></video>
     </div>
 
     <div class="control-deck" id="controlDeck">
-      <div class="settings-grid">
-        <div class="control-group">
-          <label>Resolution</label>
-          <div class="segment-control" id="resControl">
-            <button class="segment-btn" onclick="setRes(720)">720p</button>
-            <button class="segment-btn active" onclick="setRes(1080)">
-              1080p
-            </button>
-            <button class="segment-btn" onclick="setRes(1440)">2K</button>
-          </div>
+        <div style="text-align:center; color:#666; font-size:0.8rem; margin-bottom:15px;">
+            Tip: Select "Entire Screen" & Enable Audio
         </div>
-
-        <div class="control-group">
-          <label>Framerate (Hz)</label>
-          <div class="segment-control" id="fpsControl">
-            <button class="segment-btn" onclick="setFps(30)">30</button>
-            <button class="segment-btn active" onclick="setFps(60)">60</button>
-            <button class="segment-btn" onclick="setFps(120)">120</button>
-          </div>
+        <div class="action-area">
+            <button id="startBtn" class="btn-main">Start Recording</button>
+            <button id="stopBtn" class="btn-main">Stop</button>
+            <button id="dlBtn" class="btn-main">Download</button>
         </div>
-
-        <div class="control-group">
-          <label>Video Bitrate</label>
-          <div class="range-wrap">
-            <span class="range-val" id="bitrateDisplay">12 Mbps</span>
-            <input
-              type="range"
-              min="4"
-              max="25"
-              value="12"
-              step="1"
-              oninput="updateBitrate(this.value)"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div class="action-area">
-        <button id="startBtn" class="btn-main">Start Recording</button>
-        <button id="stopBtn" class="btn-main">Stop Capture</button>
-        <button id="dlBtn" class="btn-main">Download</button>
-      </div>
     </div>
 
-    <script>
-      // --- Config State ---
-      const config = {
-        res: 1080,
-        fps: 60,
-        bitrate: 12000000,
-      };
+<script>
+    // --- Configuration ---
+    const CONFIG = {
+        bitrate: 8000000, // 8 Mbps (Safe for Mobile)
+        audioGain: 4.0    // 4x Volume Boost
+    };
 
-      // Hardcoded Boost Factor (400%)
-      const AUDIO_GAIN = 4.0;
+    let mediaRecorder;
+    let chunks = [];
+    let timerInt;
+    let stream = null;
+    let audioContext = null;
 
-      let mediaRecorder;
-      let chunks = [];
-      let timerInt;
-      let stream = null;
-      let audioContext = null;
+    // --- DOM Elements ---
+    const preview = document.getElementById('preview');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const dlBtn = document.getElementById('dlBtn');
+    const recTimer = document.getElementById('recTimer');
+    const timeDisplay = document.getElementById('timeDisplay');
+    const statusBadge = document.getElementById('statusBadge');
+    const errorMsg = document.getElementById('errorMsg');
+    const deck = document.getElementById('controlDeck');
 
-      // --- UI Logic ---
-      function setActive(parentId, btnIndex) {
-        const parent = document.getElementById(parentId);
-        Array.from(parent.children).forEach((c, i) =>
-          c.classList.toggle("active", i === btnIndex)
-        );
-      }
+    function showError(msg) {
+        errorMsg.innerText = msg;
+        errorMsg.style.display = 'block';
+        setTimeout(() => errorMsg.style.display = 'none', 5000);
+    }
 
-      window.setRes = (val) => {
-        config.res = val;
-        setActive("resControl", val === 720 ? 0 : val === 1080 ? 1 : 2);
-      };
-      window.setFps = (val) => {
-        config.fps = val;
-        setActive("fpsControl", val === 30 ? 0 : val === 60 ? 1 : 2);
-      };
-      window.updateBitrate = (val) => {
-        config.bitrate = val * 1000000;
-        document.getElementById("bitrateDisplay").innerText = val + " Mbps";
-      };
-
-      function toggleControls(enable) {
-        const deck = document.getElementById("controlDeck");
-        if (enable) deck.classList.remove("locked");
-        else deck.classList.add("locked");
-      }
-
-      // --- Core Logic ---
-      const preview = document.getElementById("preview");
-      const startBtn = document.getElementById("startBtn");
-      const stopBtn = document.getElementById("stopBtn");
-      const dlBtn = document.getElementById("dlBtn");
-      const recTimer = document.getElementById("recTimer");
-      const timeDisplay = document.getElementById("timeDisplay");
-      const codecBadge = document.getElementById("codecBadge");
-
-      // Codec Detection
-      let mimeType = "video/webm;codecs=vp8";
-      let ext = "webm";
-
-      if (MediaRecorder.isTypeSupported("video/mp4;codecs=avc1")) {
-        mimeType = "video/mp4;codecs=avc1";
-        ext = "mp4";
-        codecBadge.innerText = "NATIVE: MP4";
-      } else if (MediaRecorder.isTypeSupported("video/webm;codecs=vp9")) {
-        mimeType = "video/webm;codecs=vp9";
-        ext = "webm";
-        codecBadge.innerText = "HQ: VP9";
-      } else {
-        codecBadge.innerText = "BASIC: VP8";
-        codecBadge.style.color = "#888";
-        codecBadge.style.borderColor = "#555";
-      }
-
-      startBtn.onclick = async () => {
+    // --- Main Logic ---
+    startBtn.onclick = async () => {
         try {
-          toggleControls(false);
+            // 1. Request Screen Share
+            // Note: We use basic constraints to ensure maximum compatibility
+            stream = await navigator.mediaDevices.getDisplayMedia({
+                video: {
+                    displaySurface: "monitor", // Hint for full screen
+                },
+                audio: {
+                    echoCancellation: false,
+                    noiseSuppression: false,
+                    autoGainControl: false
+                }
+            });
 
-          // 1. GET STREAMS
-          stream = await navigator.mediaDevices.getDisplayMedia({
-            video: {
-              height: { ideal: config.res },
-              frameRate: { ideal: config.fps, max: 120 },
-              width: { ideal: config.res * (16 / 9) },
-            },
-            audio: {
-              autoGainControl: false,
-              echoCancellation: false,
-              noiseSuppression: false,
-              sampleRate: 48000,
-            },
-          });
+            // 2. Audio Check & Boost Logic
+            let finalStream = stream;
+            const audioTracks = stream.getAudioTracks();
 
-          // 2. AUTO-BOOST ENGINE (Fixed at 400%)
-          let finalStream = stream;
+            if (audioTracks.length > 0) {
+                try {
+                    // Setup Audio Context for Boost
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const source = audioContext.createMediaStreamSource(stream);
+                    const gainNode = audioContext.createGain();
+                    gainNode.gain.value = CONFIG.audioGain;
+                    
+                    const dest = audioContext.createMediaStreamDestination();
+                    source.connect(gainNode);
+                    gainNode.connect(dest);
 
-          if (stream.getAudioTracks().length > 0) {
-            audioContext = new AudioContext();
-            const source = audioContext.createMediaStreamSource(stream);
-            const gainNode = audioContext.createGain();
+                    // Combine Boosted Audio + Original Video
+                    finalStream = new MediaStream([
+                        stream.getVideoTracks()[0],
+                        dest.stream.getAudioTracks()[0]
+                    ]);
+                    statusBadge.innerText = "AUDIO: BOOSTED 400%";
+                    statusBadge.style.color = "#00ff88";
+                    statusBadge.style.borderColor = "#00ff88";
+                } catch (e) {
+                    console.warn("Audio Context failed, using raw audio", e);
+                }
+            } else {
+                statusBadge.innerText = "NO AUDIO DETECTED";
+                statusBadge.style.color = "#ffaa00";
+                showError("Warning: No Audio selected. Recording Video Only.");
+            }
 
-            // FORCE 4X GAIN
-            gainNode.gain.value = AUDIO_GAIN;
+            // 3. Recorder Initialization (With Fallback)
+            startRecorder(finalStream);
 
-            const dest = audioContext.createMediaStreamDestination();
-            source.connect(gainNode);
-            gainNode.connect(dest);
+        } catch (err) {
+            console.error(err);
+            showError("Failed to start: " + err.message);
+        }
+    };
 
-            // Combine Boosted Audio + Original Video
-            finalStream = new MediaStream([
-              stream.getVideoTracks()[0],
-              dest.stream.getAudioTracks()[0],
-            ]);
-          }
+    function startRecorder(streamToRecord) {
+        // Try MP4 first, then WebM
+        let mimeType = 'video/webm'; // Default fallback
+        if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1')) {
+            mimeType = 'video/mp4;codecs=avc1';
+        } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+            mimeType = 'video/webm;codecs=vp9';
+        }
 
-          preview.srcObject = finalStream;
-          preview.muted = true; // Mute preview to prevent echo
+        try {
+            mediaRecorder = new MediaRecorder(streamToRecord, {
+                mimeType: mimeType,
+                videoBitsPerSecond: CONFIG.bitrate
+            });
+        } catch (e) {
+            // If specific codec fails, try generic
+            console.warn("Codec failed, trying default.");
+            mediaRecorder = new MediaRecorder(streamToRecord);
+        }
 
-          // 3. RECORDER SETUP
-          const options = {
-            mimeType: mimeType,
-            videoBitsPerSecond: config.bitrate,
-            audioBitsPerSecond: 192000,
-          };
+        preview.srcObject = streamToRecord;
+        preview.muted = true; // IMPORTANT: Prevent feedback loop
 
-          mediaRecorder = new MediaRecorder(finalStream, options);
-          chunks = [];
-
-          mediaRecorder.ondataavailable = (e) => {
-            if (e.data.size > 0) chunks.push(e.data);
-          };
-
-          mediaRecorder.onstop = () => {
+        chunks = [];
+        mediaRecorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+        
+        mediaRecorder.onstop = () => {
             clearInterval(timerInt);
-            if (audioContext) audioContext.close(); // Save Battery
-
-            const blob = new Blob(chunks, { type: mimeType.split(";")[0] });
+            if (audioContext) audioContext.close();
+            
+            const blob = new Blob(chunks, { type: chunks[0].type });
             const url = URL.createObjectURL(blob);
-
+            
             preview.srcObject = null;
             preview.src = url;
-            preview.muted = false; // Unmute for playback
+            preview.muted = false;
             preview.controls = true;
+            
+            resetUI();
+        };
 
-            startBtn.style.display = "block";
-            startBtn.innerText = "Record New";
-            stopBtn.style.display = "none";
-            dlBtn.style.display = "block";
-            recTimer.style.display = "none";
-            toggleControls(true);
-          };
+        // Handle System Stop
+        streamToRecord.getVideoTracks()[0].onended = () => stopBtn.click();
 
-          stream.getVideoTracks()[0].onended = () => stopBtn.click();
+        mediaRecorder.start(1000);
+        updateUIState(true);
+    }
 
-          mediaRecorder.start(1000);
-
-          // UI Transition
-          startBtn.style.display = "none";
-          stopBtn.style.display = "block";
-          dlBtn.style.display = "none";
-          recTimer.style.display = "flex";
-
-          let sec = 0;
-          timerInt = setInterval(() => {
-            sec++;
-            let m = Math.floor(sec / 60)
-              .toString()
-              .padStart(2, "0");
-            let s = (sec % 60).toString().padStart(2, "0");
-            timeDisplay.innerText = `${m}:${s}`;
-          }, 1000);
-        } catch (err) {
-          console.error(err);
-          toggleControls(true);
+    // --- UI Helpers ---
+    function updateUIState(isRecording) {
+        if (isRecording) {
+            startBtn.style.display = 'none';
+            stopBtn.style.display = 'block';
+            dlBtn.style.display = 'none';
+            deck.classList.add('locked');
+            stopBtn.style.pointerEvents = 'auto'; // Ensure Stop is clickable
+            recTimer.style.display = 'flex';
+            
+            let sec = 0;
+            timerInt = setInterval(() => {
+                sec++;
+                let m = Math.floor(sec / 60).toString().padStart(2, '0');
+                let s = (sec % 60).toString().padStart(2, '0');
+                timeDisplay.innerText = `${m}:${s}`;
+            }, 1000);
         }
-      };
+    }
 
-      stopBtn.onclick = () => {
-        if (mediaRecorder && mediaRecorder.state !== "inactive") {
-          mediaRecorder.stop();
-          if (stream) stream.getTracks().forEach((t) => t.stop());
+    function resetUI() {
+        startBtn.style.display = 'block';
+        startBtn.innerText = "Record Again";
+        stopBtn.style.display = 'none';
+        dlBtn.style.display = 'block';
+        deck.classList.remove('locked');
+        recTimer.style.display = 'none';
+    }
+
+    stopBtn.onclick = () => {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+            if (stream) stream.getTracks().forEach(t => t.stop());
         }
-      };
+    };
 
-      dlBtn.onclick = () => {
-        const blob = new Blob(chunks, { type: mimeType.split(";")[0] });
+    dlBtn.onclick = () => {
+        const blob = new Blob(chunks, { type: chunks[0].type });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
+        const a = document.createElement('a');
         a.href = url;
-        a.download = `GameClip_MaxVol_${Date.now()}.${ext}`;
+        a.download = `Recording_${Date.now()}.mp4`; // Try MP4 extension
         a.click();
-      };
-    </script>
-  </body>
+    };
+
+</script>
+</body>
 </html>
